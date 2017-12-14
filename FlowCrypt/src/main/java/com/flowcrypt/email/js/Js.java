@@ -10,6 +10,7 @@ import android.content.Context;
 import android.os.Build;
 import android.text.Html;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.eclipsesource.v8.JavaCallback;
 import com.eclipsesource.v8.Releasable;
@@ -103,12 +104,13 @@ public class Js { // Create one object per thread and use them separately. Not t
         }
     }
 
-    public String mime_encode(String body, PgpContact[] to, PgpContact from, String subject, Attachment[] attachments, MimeMessage reply_to) {
+    public String mime_encode(String body, PgpContact[] to, PgpContact from, String subject, Attachment[]
+            attachments, MimeMessage reply_to) {
         V8Object headers = (reply_to == null) ? new V8Object(v8) : mime_reply_headers(reply_to);
         headers.add("to", PgpContact.arrayAsMime(to)).add("from", from.getMime()).add("subject", subject);
         V8Array files = new V8Array(v8);
         if (attachments != null && attachments.length > 0) {
-            for (Attachment attachment: attachments) {
+            for (Attachment attachment : attachments) {
                 files.push(attachment.getV8Object());
             }
         }
@@ -166,7 +168,7 @@ public class Js { // Create one object per thread and use them separately. Not t
         V8Array params = new V8Array(v8).push(this.array(pubkeys)).push(NULL).push(NULL).push(uint8(content))
                 .push(filename).push(false).push(cb_catch);
         this.call(void.class, p("crypto", "message", "encrypt"), params);
-        V8Object packets = (V8Object) ((V8Object)((V8Object) cb_last_value[0]).get("message")).get("packets");
+        V8Object packets = (V8Object) ((V8Object) ((V8Object) cb_last_value[0]).get("message")).get("packets");
         V8TypedArray data = (V8TypedArray) packets.executeObjectFunction("write", new V8Array(v8));
         return data.getBytes(0, data.length());
     }
@@ -236,8 +238,11 @@ public class Js { // Create one object per thread and use them separately. Not t
         return FileUtils.readFileToString(file, StandardCharsets.UTF_8);
     }
 
-    private static String read(InputStream inputStream) throws IOException {
-        return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+    private static String read(InputStream inputStream, String fileName) throws IOException {
+        long start = System.currentTimeMillis();
+        String s = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        Log.d("JS", "read " + fileName + " to RAM = " + (System.currentTimeMillis() - start) + " ms");
+        return s;
     }
 
     private V8TypedArray uint8(byte[] data) {
@@ -308,20 +313,34 @@ public class Js { // Create one object per thread and use them separately. Not t
     }
 
     private V8Object loadJavascriptCode() throws IOException {
-        v8.executeScript("var engine_host_version = 'Android " + BuildConfig.VERSION_NAME.split("_")[0] + "';");
-        v8.executeScript(read(context.getAssets().open("js/window.js")));
-        v8.executeScript(read(context.getAssets().open("js/openpgp.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/punycode.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/emailjs-stringencoding.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/emailjs-addressparser.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/emailjs-mime-codec.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/emailjs-mime-parser.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/emailjs-mime-types.js")));
-        v8.executeScript(read(context.getAssets().open("js/emailjs/emailjs-mime-builder.js")));
-        v8.executeScript(read(context.getAssets().open("js/mnemonic.js")));
-        v8.executeScript(read(context.getAssets().open("js/global.js")));
-        v8.executeScript(read(context.getAssets().open("js/common.js")));
+        readScript("var engine_host_version = 'Android " + BuildConfig.VERSION_NAME.split("_")[0] + "';", "");
+        readScript(read(context.getAssets().open("js/window.js"), "window.js"), "window.js");
+        readScript(read(context.getAssets().open("js/openpgp.js"), "openpgp.js"), "openpgp.js");
+        readScript(read(context.getAssets().open("js/emailjs/punycode.js"), "punycode.js"), "punycode.js");
+        readScript(read(context.getAssets().open("js/emailjs/emailjs-stringencoding.js"), "emailjs-stringencoding" +
+                ".js"), "emailjs-stringencoding" +
+                ".js");
+        readScript(read(context.getAssets().open("js/emailjs/emailjs-addressparser.js"), "emailjs-addressparser.js"),
+                "emailjs-addressparser" +
+                        ".js");
+        readScript(read(context.getAssets().open("js/emailjs/emailjs-mime-codec.js"), "emailjs-mime-codec.js"),
+                "emailjs-mime-codec.js");
+        readScript(read(context.getAssets().open("js/emailjs/emailjs-mime-parser.js"), "emailjs-mime-parser.js"),
+                "emailjs-mime-parser.js");
+        readScript(read(context.getAssets().open("js/emailjs/emailjs-mime-types.js"), "emailjs-mime-types.js"),
+                "emailjs-mime-types.js");
+        readScript(read(context.getAssets().open("js/emailjs/emailjs-mime-builder.js"), "emailjs-mime-builder.js"),
+                "emailjs-mime-builder.js");
+        readScript(read(context.getAssets().open("js/mnemonic.js"), "mnemonic.js"), "mnemonic.js");
+        readScript(read(context.getAssets().open("js/global.js"), "global.js"), "global.js");
+        readScript(read(context.getAssets().open("js/common.js"), "common.js"), "common.js");
         return v8.getObject("window").getObject("tool");
+    }
+
+    private void readScript(String read, String scriptName) throws IOException {
+        long start = System.currentTimeMillis();
+        v8.executeScript(read);
+        Log.d("JS", "executeScript: " + scriptName + " = " + (System.currentTimeMillis() - start) + " ms");
     }
 
     private void bindCallbackCatcher() {
@@ -490,13 +509,13 @@ class JavaMethodsForJavaScript {
     public void report(Boolean isError, String title, String stack_trace, String details) {
         console_error(title);
         console_error(stack_trace);
-        if(details.length() > 0) {
+        if (details.length() > 0) {
             console_error(details);
         }
         ACRA.getErrorReporter().putCustomData("JAVASCRIPT_TITLE", title);
         ACRA.getErrorReporter().putCustomData("JAVASCRIPT_STACK_TRACE", stack_trace);
         ACRA.getErrorReporter().putCustomData("JAVASCRIPT_DETAILS", details);
-        if(isError) {
+        if (isError) {
             ACRA.getErrorReporter().handleSilentException(new JavaScriptError(title));
         } else {
             ACRA.getErrorReporter().handleSilentException(new JavaScriptReport(title));
