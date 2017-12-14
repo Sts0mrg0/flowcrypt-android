@@ -62,11 +62,19 @@ public class Js { // Create one object per thread and use them separately. Not t
         } else {
             throw new IllegalArgumentException("The context can not be null!");
         }
+        long start = System.currentTimeMillis();
         this.storage = storage;
         this.v8 = V8.createV8Runtime();
+        Log.d("JS", "V8.createV8Runtime() = " + (System.currentTimeMillis() - start) + " ms");
+        start = System.currentTimeMillis();
         bindJavaMethods();
+        Log.d("JS", "bindJavaMethods() = " + (System.currentTimeMillis() - start) + " ms");
+        start = System.currentTimeMillis();
         tool = loadJavascriptCode();
+        Log.d("JS", "loadJavascriptCode() = " + (System.currentTimeMillis() - start) + " ms");
+        start = System.currentTimeMillis();
         bindCallbackCatcher();
+        Log.d("JS", "bindCallbackCatcher() = " + (System.currentTimeMillis() - start) + " ms");
     }
 
     public StorageConnectorInterface getStorageConnector() {
