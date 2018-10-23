@@ -11,7 +11,9 @@ import android.text.TextUtils;
 
 import com.flowcrypt.email.R;
 import com.flowcrypt.email.api.email.model.IncomingMessageInfo;
+import com.flowcrypt.email.database.dao.source.AccountDaoSource;
 import com.flowcrypt.email.database.dao.source.ContactsDaoSource;
+import com.flowcrypt.email.database.dao.source.UserIdEmailsKeysDaoSource;
 import com.flowcrypt.email.js.Js;
 import com.flowcrypt.email.js.JsListener;
 import com.flowcrypt.email.js.MessageBlock;
@@ -27,6 +29,9 @@ import com.flowcrypt.email.model.messages.MessagePartPgpPublicKey;
 import com.flowcrypt.email.model.messages.MessagePartSignedMessage;
 import com.flowcrypt.email.model.messages.MessagePartText;
 import com.flowcrypt.email.model.messages.MessagePartType;
+import com.flowcrypt.email.util.exception.ManualHandledException;
+
+import org.acra.ACRA;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -38,9 +43,9 @@ import java.util.Objects;
  * This task can be used for decryption a raw MIME message.
  *
  * @author Denis Bondarenko
- *         Date: 16.02.2018
- *         Time: 10:39
- *         E-mail: DenBond7@gmail.com
+ * Date: 16.02.2018
+ * Time: 10:39
+ * E-mail: DenBond7@gmail.com
  */
 
 public class DecryptRawMimeMessageJsTask extends BaseJsTask {
@@ -59,6 +64,19 @@ public class DecryptRawMimeMessageJsTask extends BaseJsTask {
             ArrayList<String> addressesFrom = new ArrayList<>();
             ArrayList<String> addressesTo = new ArrayList<>();
             ArrayList<String> addressesCc = new ArrayList<>();
+
+            if (rawMimeMessage.contains("-----BEGIN PGP MESSAGE-----")) {
+                if (processedMime.getBlocks().length == 0) {
+                    ACRA.getErrorReporter().handleException(new ManualHandledException("Can't decrypt a message. " +
+                            "Notify denbond7@gmail.com" + "\n\n" +
+                            "keys count in db for account = " + new UserIdEmailsKeysDaoSource().getLongIdsByEmail
+                            (jsListener.getContext(), new AccountDaoSource().getActiveAccountInformation(jsListener
+                                    .getContext()).getEmail()).size() + ", Js keys count = " + (js
+                            .getStorageConnector() !=
+                            null && js.getStorageConnector().getAllPgpPrivateKeys() != null ? js.getStorageConnector()
+                            .getAllPgpPrivateKeys().length : 0)));
+                }
+            }
 
             for (MimeAddress mimeAddress : processedMime.getAddressHeader("from")) {
                 addressesFrom.add(mimeAddress.getAddress());
