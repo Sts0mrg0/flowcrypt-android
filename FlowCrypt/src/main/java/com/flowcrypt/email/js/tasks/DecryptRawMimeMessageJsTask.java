@@ -29,7 +29,7 @@ import com.flowcrypt.email.model.messages.MessagePartPgpPublicKey;
 import com.flowcrypt.email.model.messages.MessagePartSignedMessage;
 import com.flowcrypt.email.model.messages.MessagePartText;
 import com.flowcrypt.email.model.messages.MessagePartType;
-import com.flowcrypt.email.util.exception.ManualHandledException;
+import com.flowcrypt.email.util.exception.Issue347Exception;
 
 import org.acra.ACRA;
 
@@ -67,14 +67,20 @@ public class DecryptRawMimeMessageJsTask extends BaseJsTask {
 
             if (rawMimeMessage.contains("-----BEGIN PGP MESSAGE-----")) {
                 if (processedMime.getBlocks().length == 0) {
-                    ACRA.getErrorReporter().handleException(new ManualHandledException("Can't decrypt a message. " +
-                            "Notify denbond7@gmail.com" + "\n\n" +
-                            "keys count in db for account = " + new UserIdEmailsKeysDaoSource().getLongIdsByEmail
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append("Can't decrypt a message. ");
+                    stringBuilder.append("keys count in db for account = ");
+                    stringBuilder.append(new UserIdEmailsKeysDaoSource().getLongIdsByEmail
                             (jsListener.getContext(), new AccountDaoSource().getActiveAccountInformation(jsListener
-                                    .getContext()).getEmail()).size() + ", Js keys count = " + (js
-                            .getStorageConnector() !=
-                            null && js.getStorageConnector().getAllPgpPrivateKeys() != null ? js.getStorageConnector()
-                            .getAllPgpPrivateKeys().length : 0)));
+                                    .getContext()).getEmail()).size());
+                    stringBuilder.append("\n");
+                    stringBuilder.append("Js keys count =");
+                    stringBuilder.append((js.getStorageConnector() != null && js.getStorageConnector()
+                            .getAllPgpPrivateKeys() != null ? js.getStorageConnector().getAllPgpPrivateKeys()
+                            .length : 0));
+                    stringBuilder.append(", processedMime =" + processedMime);
+
+                    ACRA.getErrorReporter().handleException(new Issue347Exception(stringBuilder.toString()));
                 }
             }
 

@@ -58,4 +58,14 @@ public class MessageBlock extends MeaningfulV8ObjectContainer {
         }
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "MessageBlock{" +
+                "type='" + type + '\'' +
+                ", content='CONFIDENCE!!!" + '\'' +
+                ", complete=" + complete +
+                ", signature='" + signature + '\'' +
+                "} " + super.toString();
+    }
 }

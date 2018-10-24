@@ -4,8 +4,11 @@
  */
 
 package com.flowcrypt.email.js;
+
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
+
+import java.util.Arrays;
 
 
 public class ProcessedMime extends MeaningfulV8ObjectContainer {
@@ -15,6 +18,11 @@ public class ProcessedMime extends MeaningfulV8ObjectContainer {
     ProcessedMime(V8Object o, Js js) {
         super(o);
         this.js = js;
+    }
+
+    @Override
+    public String toString() {
+        return "ProcessedMime{} getHeaders() = " + getHeaders() + ", getBlocks =" + Arrays.toString(getBlocks());
     }
 
     public V8Object getHeaders() {
@@ -31,17 +39,17 @@ public class ProcessedMime extends MeaningfulV8ObjectContainer {
 
     public MimeAddress[] getAddressHeader(String header_name) {
         V8Array addresses = getAttributeAsArray(getHeaders(), header_name);
-        if(addresses == null) {
+        if (addresses == null) {
             return new MimeAddress[0];
         }
         MimeAddress[] results = new MimeAddress[addresses.length()];
-        for(int i = 0; i < addresses.length(); i++) {
+        for (int i = 0; i < addresses.length(); i++) {
             results[i] = new MimeAddress(addresses.getObject(i));
         }
         return results;
     }
 
     public MessageBlock[] getBlocks() {
-        return new MessageBlock[0];
+        return MessageBlock.arrayFromV8Array(getAttributeAsArray("blocks"));
     }
 }

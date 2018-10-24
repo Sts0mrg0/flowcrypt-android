@@ -44,9 +44,7 @@ import com.flowcrypt.email.api.email.model.GeneralMessageDetails;
 import com.flowcrypt.email.api.email.model.IncomingMessageInfo;
 import com.flowcrypt.email.api.email.model.ServiceInfo;
 import com.flowcrypt.email.api.email.sync.SyncErrorTypes;
-import com.flowcrypt.email.database.dao.source.AccountDaoSource;
 import com.flowcrypt.email.database.dao.source.ContactsDaoSource;
-import com.flowcrypt.email.database.dao.source.UserIdEmailsKeysDaoSource;
 import com.flowcrypt.email.database.dao.source.imap.AttachmentDaoSource;
 import com.flowcrypt.email.js.Js;
 import com.flowcrypt.email.js.JsForUiManager;
@@ -69,7 +67,7 @@ import com.flowcrypt.email.ui.activity.fragment.dialog.PrepareSendUserPublicKeyD
 import com.flowcrypt.email.ui.widget.EmailWebView;
 import com.flowcrypt.email.util.GeneralUtil;
 import com.flowcrypt.email.util.UIUtil;
-import com.flowcrypt.email.util.exception.ManualHandledException;
+import com.flowcrypt.email.util.exception.Issue347Exception;
 import com.google.android.gms.common.util.CollectionUtils;
 
 import org.acra.ACRA;
@@ -650,15 +648,8 @@ public class MessageDetailsFragment extends BaseSyncFragment implements View.OnC
 
         if (incomingMessageInfo.getOriginalRawMessageWithoutAttachments().contains("-----BEGIN PGP MESSAGE-----")) {
             if (CollectionUtils.isEmpty(incomingMessageInfo.getMessageParts())) {
-                ACRA.getErrorReporter().handleException(new ManualHandledException("Can't decrypt a message. " +
-                        "Notify denbond7@gmail.com" + "\n\n" +
-                        "keys count in db for account = " + new UserIdEmailsKeysDaoSource().getLongIdsByEmail
-                        (getContext(), new AccountDaoSource().getActiveAccountInformation(getContext()).getEmail())
-                        .size() + ", Js keys count = " + (JsForUiManager.getInstance(getContext()).getJs()
-                        .getStorageConnector() != null && JsForUiManager.getInstance(getContext()).getJs()
-                        .getStorageConnector().getAllPgpPrivateKeys() != null
-                        ? JsForUiManager.getInstance(getContext()).getJs().getStorageConnector()
-                        .getAllPgpPrivateKeys().length : 0)));
+                ACRA.getErrorReporter().handleException(new Issue347Exception("incomingMessageInfo.getMessageParts() " +
+                        "is empty"));
             }
         }
 
